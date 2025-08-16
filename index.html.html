@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Companion: Notes & Quizzes</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1, h2 {
+            text-align: center;
+            color: #333;
+        }
+        .tab {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .tab button {
+            padding: 10px 20px;
+            margin: 0 5px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .tab button.active {
+            background-color: #0056b3;
+        }
+        .tab button:hover {
+            background-color: #0056b3;
+        }
+        .section {
+            display: none;
+        }
+        .section.active {
+            display: block;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .note, .quiz-question {
+            background-color: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .note button, .quiz-question button {
+            background-color: #dc3545;
+            margin-left: 10px;
+        }
+        .note button:hover, .quiz-question button:hover {
+            background-color: #c82333;
+        }
+        .quiz-question input[type="radio"] {
+            margin-right: 10px;
+        }
+        #quizResult {
+            text-align: center;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Study Companion</h1>
+    <div class="tab">
+        <button class="tablinks active" onclick="openSection('notes')">Notes</button>
+        <button class="tablinks" onclick="openSection('quizzes')">Quizzes</button>
+    </div>
+
+    <!-- Notes Section -->
+    <div id="notes" class="section active">
+        <h2>Course Notes</h2>
+        <input type="text" id="noteTitle" placeholder="Note Title (e.g., Morpheme Basics)">
+        <textarea id="noteContent" placeholder="Enter note content..." rows="5"></textarea>
+        <button onclick="addNote()">Add Note</button>
+        <div id="noteList"></div>
+    </div>
+
+    <!-- Quizzes Section -->
+    <div id="quizzes" class="section">
+        <h2>Quizzes</h2>
+        <div id="quizContainer"></div>
+        <button onclick="submitQuiz()">Submit Quiz</button>
+        <div id="quizResult"></div>
+    </div>
+
+    <script>
+        // Tab navigation
+        function openSection(sectionId) {
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.querySelectorAll('.tablinks').forEach(button => {
+                button.classList.remove('active');
+            });
+            document.getElementById(sectionId).classList.add('active');
+            document.querySelector(`button[onclick="openSection('${sectionId}')"]`).classList.add('active');
+        }
+
+        // Notes Functionality
+        document.addEventListener('DOMContentLoaded', loadNotes);
+
+        function addNote() {
+            const title = document.getElementById('noteTitle').value.trim();
+            const content = document.getElementById('noteContent').value.trim();
+            if (title === '' || content === '') {
+                alert('Please enter both a title and content!');
+                return;
+            }
+
+            const note = { id: Date.now(), title, content };
+            let notes = getNotes();
+            notes.push(note);
+            localStorage.setItem('notes', JSON.stringify(notes));
+            renderNote(note);
+            document.getElementById('noteTitle').value = '';
+            document.getElementById('noteContent').value = '';
+        }
+
+        function deleteNote(id) {
+            let notes = getNotes();
+            notes = notes.filter(note => note.id !== id);
+            localStorage.setItem('notes', JSON.stringify(notes));
+            document.getElementById('noteList').innerHTML = '';
+            loadNotes();
+        }
+
+        function getNotes() {
+            return JSON.parse(localStorage.getItem('notes')) || [];
+        }
+
+        function loadNotes() {
+            const notes = getNotes();
+            notes.forEach(note => renderNote(note));
+        }
+
+        function renderNote(note) {
+            const noteList = document.getElementById('noteList');
+            const div = document.createElement('div');
+            div.className = 'note';
+            div.innerHTML = `
+                <h3>${note.title}</h3>
+                <p>${note.content}</p>
+                <button onclick="deleteNote(${note.id})">Delete</button>
+            `;
+            noteList.appendChild(div);
+        }
+
+        // Quiz Functionality
+        const sampleQuiz = [
+            {
+                question: "What is the root morpheme in 'decision'?",
+                options: ["sion", "ci", "ion", "de"],
+                correct: "ci"
+            },
+            {
+                question: "What is the base form of the morpheme in 'collision'?",
+                options: ["led", "lis", "colis", "lad"],
+                correct: "colis"
+            }
+        ];
+
+        document.addEventListener('DOMContentLoaded', loadQuiz);
+
+        function loadQuiz() {
+            const quizContainer = document.getElementById('quizContainer');
+            sampleQuiz.forEach((q, index) => {
+                const div = document.createElement('div');
+                div.className = 'quiz-question';
+                div.innerHTML = `
+                    <p>${index + 1}. ${q.question}</p>
+                    ${q.options.map((option, i) => `
+                        <label>
+                            <input type="radio" name="question${index}" value="${option}">
+                            ${option}
+                        </label><br>
+                    `).join('')}
+                `;
+                quizContainer.appendChild(div);
+            });
+        }
+
+        function submitQuiz() {
+            let score = 0;
+            sampleQuiz.forEach((q, index) => {
+                const selected = document.querySelector(`input[name="question${index}"]:checked`);
+                if (selected && selected.value === q.correct) {
+                    score++;
+                }
+            });
+            const resultDiv = document.getElementById('quizResult');
+            resultDiv.innerHTML = `You scored ${score} out of ${sampleQuiz.length}!`;
+        }
+    </script>
+</body>
+</html>
